@@ -1,0 +1,15 @@
+# Dependency directories
+node_modules/
+
+# Build outputs
+build/
+
+# Local environment and secret files
+.env
+tokens.json
+client_secret_*.json
+
+# OS files
+.DS_Store
+
+credentials.json

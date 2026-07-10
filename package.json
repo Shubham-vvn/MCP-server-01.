@@ -1,0 +1,24 @@
+{
+  "name": "google-workspace-mcp",
+  "version": "1.0.0",
+  "description": "Generic Model Context Protocol (MCP) server for Google Workspace APIs",
+  "main": "build/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "rimraf build && tsc",
+    "start": "node build/index.js",
+    "dev": "tsx src/index.ts",
+    "auth": "tsx src/auth.ts --auth-flow"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.1",
+    "dotenv": "^16.4.5",
+    "googleapis": "^140.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "rimraf": "^5.0.7",
+    "tsx": "^4.15.7",
+    "typescript": "^5.5.2"
+  }
+}
