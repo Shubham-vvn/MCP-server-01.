@@ -1,0 +1,12 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm run build"
+watchPatterns = [
+  "src/**",
+  "package.json",
+  "tsconfig.json"
+]
+
+[deploy]
+startCommand = "npm run start"
+restartPolicyType = "ON_FAILURE"
