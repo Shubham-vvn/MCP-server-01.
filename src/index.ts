@@ -1,5 +1,6 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -9,6 +10,8 @@ import {
 import { createDraft, sendEmail } from './gmail.js';
 import { appendText } from './gdocs.js';
 import dotenv from 'dotenv';
+import http from 'http';
+import url from 'url';
 
 dotenv.config();
 
@@ -197,11 +200,51 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-// Run the server using stdio transport
+// Run the server using stdio or SSE transport
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error('Google Workspace MCP Server running on stdio');
+  const port = process.env.PORT;
+
+  if (port) {
+    // Run as SSE Server (for hosted platforms like Railway)
+    const transports = new Map<string, SSEServerTransport>();
+
+    const httpServer = http.createServer(async (req, res) => {
+      const parsedUrl = url.parse(req.url || '', true);
+
+      if (req.method === 'GET' && parsedUrl.pathname === '/sse') {
+        const transport = new SSEServerTransport('/messages', res);
+        transports.set(transport.sessionId, transport);
+
+        res.on('close', () => {
+          transports.delete(transport.sessionId);
+        });
+
+        await server.connect(transport);
+      } else if (req.method === 'POST' && parsedUrl.pathname === '/messages') {
+        const sessionId = parsedUrl.query.sessionId as string;
+        const transport = transports.get(sessionId);
+
+        if (transport) {
+          await transport.handlePostMessage(req, res);
+        } else {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('No transport found for sessionId');
+        }
+      } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not Found');
+      }
+    });
+
+    httpServer.listen(port, () => {
+      console.error(`Google Workspace MCP Server running on SSE port ${port}`);
+    });
+  } else {
+    // Run as Stdio Server (for local client run)
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error('Google Workspace MCP Server running on stdio');
+  }
 }
 
 main().catch((error) => {
